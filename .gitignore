@@ -1,0 +1,4 @@
+.env
+.venv
+genai/
+Generative_AI_Project.egg-info/
