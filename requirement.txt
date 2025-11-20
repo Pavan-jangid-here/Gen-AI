@@ -1,7 +1,12 @@
 python-dotenv
 google-generativeai
 langchain
+langchain-community
+langchain-classic
+langchain_text_splitters
+langchain-google-genai
 PyPDF2
 faiss-cpu
 streamlit
+sentence-transformers
 -e .
