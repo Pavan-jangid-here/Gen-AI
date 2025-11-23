@@ -13,80 +13,56 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 
 
-load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+
+VDB_DIR = "faiss_stores"
+
+def create_faiss_store(VDB_DIR):
+    os.makedirs(VDB_DIR, exist_ok=True)
 
 
 
-def get_pdf_text(pdf_docs):
+# ========== Utility Functions ==========
+def list_vector_stores():
+    return [f.replace(".faiss", "") for f in os.listdir(VDB_DIR) if f.endswith(".faiss")]
 
-    text = ""
+def extract_pdf_text(files):
+    texts = []
+    for file in files:
+        reader = PdfReader(file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        texts.append(text)
+    return texts
 
-    for pdf in pdf_docs:
-        pdf_reader = PdfReader(pdf)
-        for page in pdf_reader.pages:
-            text += page.extract_text()
 
-    return text
-
-
-def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size = 1000, chunk_overlap = 20)
-    chunks = text_splitter.split_text(text)
+def split_text(pdf_texts):
+    full_text = "\n".join(pdf_texts)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    chunks = splitter.split_text(full_text)
     return chunks
 
+def Embedding_VectorStore(chunks):
+    embedder = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    vdb = FAISS.from_texts(chunks, embedder)
+    return vdb
 
-def get_vector_store_new(text_chunks):
-    # Load the pre-trained model
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+def save_vector(vdb, vectorstore_name):
+    VDB_DIR = "faiss_stores"
+    os.makedirs(VDB_DIR, exist_ok=True)
 
-    # Generate embeddings
-    embeddings = model.encode(text_chunks)
+    vdb_path = os.path.join(VDB_DIR, f"{vectorstore_name}.faiss")
+    vdb.save_local(vdb_path)
+    return
 
-    # Save embeddings and texts locally as .npy and .txt files
-    np.save('embeddings.npy', embeddings)
+def load_vdb(vectorstore_path):
+    embedder = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+    vdb = FAISS.load_local(vectorstore_path, embedder, allow_dangerous_deserialization=True)
+    return vdb
 
-    with open('text_chunks.txt', 'w', encoding='utf-8') as f:
-        for chunk in text_chunks:
-            f.write(chunk.replace('\n', ' ') + '\n')
+def get_context(vdb, user_input):
+    docs = vdb.similarity_search(user_input)
+    context = "\n".join([doc.page_content for doc in docs])
+    return context
 
-
-def get_vector_store(text_chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
-    try:
-        vector_store = FAISS.from_texts(text_chunks, embedding = embeddings)
-    except Exception as e:
-        print(f"Error Occured: {e}")
-    return vector_store
-
-
-# def get_conversational_chain(vector_store):
-#     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key = GOOGLE_API_KEY)
-
-#     memory = ConversationBufferMemory(memory_key = "chat_history", return_messages=True)
-
-#     conversation_chain = ConversationalRetrievalChain.from_llm(llm = llm, retriever = vector_store.as_retriever(), memory = memory) 
-
-#     return conversation_chain
-
-
-def get_relevant_context_and_answer(vector_store, user_question, k=5):
-    """Retrieve relevant chunks and get answer using LLM."""
-    retriever = vector_store.as_retriever(search_kwargs={"k": k})
-    relevant_docs = retriever.invoke(user_question)
-    context = "\n\n".join(doc.page_content for doc in relevant_docs)
-
-    # Build prompt for answer generation
-    template = """
-        You are an expert in answering questions about boiler tube leakage.
-        Here is some context from technical documents: {context}
-        Here is the question: {question}
-        Answer precisely based only on the context.
-    """
-    prompt = ChatPromptTemplate.from_template(template)
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=GOOGLE_API_KEY)
-    answer = llm.invoke(prompt.format(context=context, question=user_question))
-    # Streamlit expects string for display; context_chunks for inspection
-    return answer.content if hasattr(answer, "content") else answer, [doc.page_content for doc in relevant_docs]
 
