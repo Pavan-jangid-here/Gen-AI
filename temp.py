@@ -42,72 +42,29 @@ def extract_pdf_text(files):
         texts.append(text)
     return texts
 
-# Batch creation parameters
-MAX_CHUNKS_PER_RUN = st.number_input(
-    "Max chunks per batch (lower if you hit quota errors, usually 50~100)",
-    min_value=1, max_value=500, value=50
-)
 
 uploaded_files = st.file_uploader("Attach PDF files", type=["pdf"], accept_multiple_files=True)
 vectorstore_name = st.text_input("Name your new vector store", "")
-create_vector_btn = st.button("Create Batched Vector Store")
+create_vector_btn = st.button("Create Vector Store")
 
-def create_batched_vector_stores(chunks, embedder, base_name, vdb_dir, max_per_run):
-    total_batches = math.ceil(len(chunks) / max_per_run)
-    last_successful_batch = None
-    for batch_idx in range(total_batches):
-        start = batch_idx * max_per_run
-        end = min((batch_idx + 1) * max_per_run, len(chunks))
-        batch_chunks = chunks[start:end]
-        vdb_name = f"{base_name}_{batch_idx+1}"
-        vdb_path = os.path.join(vdb_dir, f"{vdb_name}.faiss")
-        try:
-            vdb = FAISS.from_texts(batch_chunks, embedder)
-            vdb.save_local(vdb_path)
-            st.success(f"Batch {batch_idx+1}/{total_batches} saved as '{vdb_name}'")
-            last_successful_batch = batch_idx+1
-        except Exception as e:
-            st.warning(
-                f"Error processing batch {batch_idx+1}: {e}\n"
-                "You may be hitting a rate/quota error. Please wait and retry remaining batches later."
-            )
-            break
-    return last_successful_batch
+
 
 if create_vector_btn and uploaded_files and vectorstore_name:
     pdf_texts = extract_pdf_text(uploaded_files)
     full_text = "\n".join(pdf_texts)
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = splitter.split_text(full_text)
-    # Batched creation!
-    create_batched_vector_stores(chunks, embedder, vectorstore_name, VDB_DIR, MAX_CHUNKS_PER_RUN)
-    st.session_state["current_vectorstore"] = f"{vectorstore_name}_1"  # Set to first batch by default
+    
+    # Create single FAISS vectorstore from all chunks at once
+    vdb_path = os.path.join(VDB_DIR, f"{vectorstore_name}.faiss")
+    try:
+        vdb = FAISS.from_texts(chunks, embedder)
+        vdb.save_local(vdb_path)
+        st.success(f"Vector store '{vectorstore_name}' created successfully.")
+        st.session_state["current_vectorstore"] = vectorstore_name  # Set selected vectorstore
+    except Exception as e:
+        st.error(f"Error creating vector store: {e}")
 
-# Merging utility
-def merge_faiss_files(base_name, vdb_dir):
-    batch_files = sorted([
-        f for f in os.listdir(vdb_dir)
-        if f.startswith(base_name + "_") and f.endswith(".faiss")
-    ])
-    final_store_path = os.path.join(vdb_dir, f"{base_name}.faiss")
-    if not batch_files:
-        st.warning("No batch files found to merge.")
-        return
-    base_vdb = FAISS.load_local(os.path.join(vdb_dir, batch_files[0]), embedder,
-                                allow_dangerous_deserialization=True)
-    for batch_file in batch_files[1:]:
-        new_vdb = FAISS.load_local(os.path.join(vdb_dir, batch_file), embedder,
-                                   allow_dangerous_deserialization=True)
-        base_vdb.merge_from(new_vdb)
-    base_vdb.save_local(final_store_path)
-    st.success(f"Merged all batches into '{base_name}'.")
-
-# UI for merging
-st.markdown("### Merge Batched Vector Stores")
-merge_base_name = st.text_input("Base store name to merge batches (e.g. Boiler Research Paper)")
-merge_btn = st.button("Merge All Batches")
-if merge_btn and merge_base_name:
-    merge_faiss_files(merge_base_name, VDB_DIR)
 
 # List available vector stores (main + batches)
 st.markdown("### Available Vector Stores")
