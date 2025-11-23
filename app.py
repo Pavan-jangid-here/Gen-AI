@@ -1,43 +1,51 @@
 import streamlit as st
-import time
-from src.helper import *
-
-def user_input(user_question):
-    response = st.session_state.conversation({"question" : user_question})
-    st.session_state.chatHistory = response["chat_history"]
-    for i, message in enumerate(st.session_state.chatHistory):
-        if i%2 == 0:
-            st.write("User: ", message.content)
-        else:
-            st.write("Reply: ", message.content)
+from src.helper import get_pdf_text, get_text_chunks, get_relevant_context_and_answer
+from src.vector import get_vector_db
 
 def main():
-    st.set_page_config("Information Retrival")
+    st.set_page_config("Information Retrieval")
     st.header("Boiler-Tube-Leakage-System 💡")
 
-    user_question = st.text_input("Ask a Question !!!")
+    # Session state for vector DB and file status
+    if "vector_store" not in st.session_state:
+        st.session_state.vector_store = None
+    if "files_ready" not in st.session_state:
+        st.session_state.files_ready = False
 
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = None
-    if "chatHistory" not in st.session_state:
-        st.session_state.chatHistory = None
-    if user_question:
-        user_input(user_question)
-
+    # Sidebar: Upload and process files
     with st.sidebar:
-        st.title("Menu: ")
-        pdf_docs = st.file_uploader("Upload your PDF Files and Submit with button.", accept_multiple_files=True)
-
+        st.title("Menu:")
+        pdf_docs = st.file_uploader(
+            "Upload your PDF Files and Submit with button.",
+            accept_multiple_files=True,
+            type=["pdf"]
+        )
         if st.button("Submit & Process"):
-            with st.spinner("Processing ..."):
-                
-                raw_text = get_pdf_text(pdf_docs)
-                text_chunks = get_text_chunks(raw_text)
-                vector_store = get_vector_store(text_chunks)
-                st.session_state.conversation = get_conversational_chain(vector_store)
+            if pdf_docs:
+                with st.spinner("Processing ..."):
+                    raw_text = get_pdf_text(pdf_docs)
+                    text_chunks = get_text_chunks(raw_text)
+                    vector_store = get_vector_db(text_chunks)
+                    st.session_state.vector_store = vector_store
+                    st.session_state.files_ready = True
+                    st.success("Files processed and context ready!")
+            else:
+                st.warning("Please upload at least one PDF.")
 
-
-                st.success("Done !!!")
+    # Main Q&A area
+    user_question = st.text_input("Ask a Question !!!")
+    if st.button("Ask"):
+        if st.session_state.files_ready and st.session_state.vector_store:
+            answer, context_chunks = get_relevant_context_and_answer(
+                st.session_state.vector_store, user_question
+            )
+            st.write("## Answer:")
+            st.write(answer)
+            st.write("### Relevant Context Chunks:")
+            for idx, chunk in enumerate(context_chunks, 1):
+                st.write(f"{idx}. {chunk}")
+        else:
+            st.warning("Upload and process files first (in sidebar)!")
 
 if __name__ == "__main__":
     main()

@@ -9,4 +9,5 @@ PyPDF2
 faiss-cpu
 streamlit
 sentence-transformers
+langchain-chroma
 -e .
