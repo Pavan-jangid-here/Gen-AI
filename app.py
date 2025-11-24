@@ -1,5 +1,5 @@
 import streamlit as st
-from src.helper import list_vector_stores, Embedding_VectorStore, save_vector, VDB_DIR, create_faiss_store, load_vdb, get_context, extract_and_chunk_pdfs
+from src.helper import list_vector_stores, Embedding_VectorStore, save_vector, VDB_DIR, create_faiss_store, load_vdb, get_context, extract_and_chunk_files
 # from src.vector import get_vector_db
 import os
 from dotenv import load_dotenv
@@ -44,7 +44,7 @@ def main():
         padding: 1.3em;
         margin: 0.4em 0;
         width: fit-content;
-        max-width: 60%;
+        max-width: 90%;
         align-self: flex-end;
         box-shadow: 0 2px 12px rgba(50,50,100,0.1);
         animation: fadeInUp 0.6s;
@@ -56,7 +56,7 @@ def main():
         padding: 1.3em;
         margin: 0.4em 0;
         width: fit-content;
-        max-width: 60%;
+        max-width: 95%;
         align-self: flex-start;
         box-shadow: 0 2px 12px rgba(50,50,100,0.18);
         border-left: 6px solid #7289da;
@@ -90,7 +90,7 @@ def main():
         with st.container():
             col1, colA, col2 = st.columns([3,2,1])
             with col1:
-                uploaded_files = st.file_uploader(label = "", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
+                uploaded_files = st.file_uploader(label = "", type=["pdf", "csv", "xlsx"], accept_multiple_files=True, label_visibility="collapsed")
             with colA:
                 vectorstore_name = st.text_input("", placeholder="Name of Vector Store", key="vector_name", label_visibility="collapsed")
             with col2:
@@ -108,7 +108,7 @@ def main():
     if create_vector_btn and uploaded_files and vectorstore_name:
         # pdf_texts = extract_pdf_text(uploaded_files)
         # chunks = split_text(pdf_texts)
-        documents = extract_and_chunk_pdfs(uploaded_files)
+        documents = extract_and_chunk_files(uploaded_files)
 
         try:
             vdb = Embedding_VectorStore(documents)
@@ -152,7 +152,7 @@ def main():
             if vectorstore_path and os.path.exists(vectorstore_path):
                 vdb = load_vdb(vectorstore_path)
                 context = get_context(vdb, user_input)
-                full_query = f"You are an Expert in field of Boiler of thermal power plant. Here is Context:\n{context}\n\nQuestion:{user_input}, give the PDF source at the end of given response."
+                full_query = f"You are an Expert in field of Boiler of thermal power plant. Here is Context:\n{context}\n\nQuestion:{user_input}, give the file source at the end of given response."
 
                 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=GOOGLE_API_KEY)
                 response = llm.invoke(full_query)
@@ -169,7 +169,7 @@ def main():
 
     # ========== Chat History (Horizontal Bubbles) ==========
     if st.session_state["chat_messages"]:
-        st.markdown("### 💎 Chat Universe")
+        # st.markdown("### 💎 Chat Universe")
         # Render chat as columns, latest first
         for i, msg in enumerate(reversed(st.session_state["chat_messages"])):  # latest-on-top
             colu, colb = st.columns([2,2])

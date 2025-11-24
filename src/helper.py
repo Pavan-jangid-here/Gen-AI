@@ -13,6 +13,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from dotenv import load_dotenv
+import pandas as pd
+from io import BytesIO
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -47,21 +49,97 @@ def list_vector_stores():
 #     chunks = splitter.split_text(full_text)
 #     return chunks
 
-def extract_and_chunk_pdfs(pdf_files):
+# def extract_and_chunk_pdfs(pdf_files):
+#     chunks = []
+#     for file in pdf_files:
+#         reader = PdfReader(file)
+#         text = ""
+#         for page in reader.pages:
+#             text += page.extract_text() or ""
+#         # Split text into chunks for each PDF
+#         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+#         file_chunks = splitter.split_text(text)
+#         # Annotate each chunk with filename metadata
+#         for chunk in file_chunks:
+#             doc = Document(page_content=chunk, metadata={"source": file})
+#             chunks.append(doc)
+#     return chunks
+
+
+
+def extract_and_chunk_files(file_objs):
+    """
+    file_objs: list of either string paths or Streamlit UploadedFile objects
+    """
     chunks = []
-    for file in pdf_files:
-        reader = PdfReader(file)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text() or ""
-        # Split text into chunks for each PDF
-        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        file_chunks = splitter.split_text(text)
-        # Annotate each chunk with filename metadata
-        for chunk in file_chunks:
-            doc = Document(page_content=chunk, metadata={"source": file})
-            chunks.append(doc)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    
+    for file_obj in file_objs:
+        # If it's an UploadedFile, get its attributes & content
+        if hasattr(file_obj, "name") and hasattr(file_obj, "read"):
+            file_name = file_obj.name
+            file_ext = os.path.splitext(file_name)[1].lower()
+        else:
+            file_name = os.path.basename(file_obj)
+            file_ext = os.path.splitext(file_obj)[1].lower()
+        
+        # ========== PDF ==========
+        if file_ext == ".pdf":
+            try:
+                # Accept both file path and UploadedFile
+                if hasattr(file_obj, "read"):
+                    # Seek to beginning!
+                    file_bytes = file_obj.read()
+                    pdf_stream = BytesIO(file_bytes)
+                    reader = PdfReader(pdf_stream)
+                else:
+                    reader = PdfReader(file_obj)
+                
+                text = ""
+                for page in reader.pages:
+                    text += page.extract_text() or ""
+                file_chunks = splitter.split_text(text)
+                for chunk in file_chunks:
+                    doc = Document(page_content=chunk, metadata={
+                        "source": file_name, "file_type": "pdf"
+                    })
+                    chunks.append(doc)
+            except Exception as e:
+                print(f"PDF error: {file_name}: {e}")
+        
+        # ========== CSV/Excel ==========
+        elif file_ext in [".csv", ".xlsx", ".xls"]:
+            try:
+                if hasattr(file_obj, "read"):
+                    file_obj.seek(0)  # for safety
+                    if file_ext == ".csv":
+                        df = pd.read_csv(file_obj)
+                    else:
+                        df = pd.read_excel(file_obj)
+                else:
+                    if file_ext == ".csv":
+                        df = pd.read_csv(file_obj)
+                    else:
+                        df = pd.read_excel(file_obj)
+                for idx, row in df.iterrows():
+                    text_parts = [f"{col}: {row[col]}" for col in df.columns]
+                    content = "\n".join(map(str, text_parts))
+                    doc = Document(page_content=content, metadata={
+                        "source": file_name,
+                        "file_type": file_ext.strip(".").lower(),
+                        "row_index": int(idx)
+                    })
+                    chunks.append(doc)
+            except Exception as e:
+                print(f"DATA error: {file_name}: {e}")
+        else:
+            print(f"Unsupported file type: {file_name}")
+    
     return chunks
+
+
+
+
 
 # def Embedding_VectorStore(chunks):
 #     embedder = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
