@@ -1,5 +1,5 @@
 import streamlit as st
-from src.helper import list_vector_stores, extract_pdf_text, split_text, Embedding_VectorStore, save_vector, VDB_DIR, create_faiss_store, load_vdb, get_context
+from src.helper import list_vector_stores, Embedding_VectorStore, save_vector, VDB_DIR, create_faiss_store, load_vdb, get_context, extract_and_chunk_pdfs
 # from src.vector import get_vector_db
 import os
 from dotenv import load_dotenv
@@ -106,11 +106,12 @@ def main():
     # ==================================================== Processing of PDF to Vector Store ========================================================
 
     if create_vector_btn and uploaded_files and vectorstore_name:
-        pdf_texts = extract_pdf_text(uploaded_files)
-        chunks = split_text(pdf_texts)
+        # pdf_texts = extract_pdf_text(uploaded_files)
+        # chunks = split_text(pdf_texts)
+        documents = extract_and_chunk_pdfs(uploaded_files)
 
         try:
-            vdb = Embedding_VectorStore(chunks)
+            vdb = Embedding_VectorStore(documents)
             save_vector(vdb, vectorstore_name)
             st.success(f"✅ Vector store **{vectorstore_name}** created successfully.")
             st.session_state["current_vectorstore"] = vectorstore_name
