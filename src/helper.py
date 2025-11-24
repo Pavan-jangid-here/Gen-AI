@@ -105,9 +105,16 @@ def load_vdb(vectorstore_path):
     return vdb
 
 
+# def get_context(vdb, user_input):
+#     docs = vdb.similarity_search(user_input)
+#     context = "\n".join([doc.page_content for doc in docs])
+#     return context
+
 def get_context(vdb, user_input):
     docs = vdb.similarity_search(user_input)
-    context = "\n".join([doc.page_content for doc in docs])
+    context_output = []
+    for doc in docs:
+        source = doc.metadata.get("source", "unknown")
+        context_output.append(f"PDF: {source}\n{doc.page_content}")
+    context = "\n\n".join(context_output)
     return context
-
-

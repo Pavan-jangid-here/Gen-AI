@@ -152,7 +152,7 @@ def main():
             if vectorstore_path and os.path.exists(vectorstore_path):
                 vdb = load_vdb(vectorstore_path)
                 context = get_context(vdb, user_input)
-                full_query = f"You are an Expert in field of Boiler of thermal power plant. Here is Context:\n{context}\n\nQuestion:{user_input}"
+                full_query = f"You are an Expert in field of Boiler of thermal power plant. Here is Context:\n{context}\n\nQuestion:{user_input}, give the PDF source at the end of given response."
 
                 llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=GOOGLE_API_KEY)
                 response = llm.invoke(full_query)
