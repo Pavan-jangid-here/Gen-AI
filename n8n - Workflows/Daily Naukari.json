@@ -1,0 +1,238 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -48
+      ],
+      "id": "c7e84810-4bf8-4abc-a280-af5be15702bc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"Job_Name\": \"Data Scientist\",\n  \"Location\": \"Ahmedabad\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        -48
+      ],
+      "id": "aaf8ddc5-f410-4191-92af-191e1ef8450f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://api.openwebninja.com/jsearch/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.Job_Name }} in {{ $json.Location }}"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "num_pages",
+              "value": "1"
+            },
+            {
+              "name": "country",
+              "value": "in"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            },
+            {
+              "name": "date_posted",
+              "value": "today"
+            },
+            {
+              "name": "work_from_home",
+              "value": "false"
+            },
+            {
+              "name": "employment_types",
+              "value": "FULLTIME"
+            },
+            {
+              "name": "job_requirements",
+              "value": "under_3_years_experience"
+            },
+            {
+              "name": "radius",
+              "value": "50"
+            },
+            {
+              "name": "exclude_job_publishers",
+              "value": "Indeed"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ak_b4hjmp7armki9dcz5w3yfngqb5itb78oq18lv2wenl9lveo"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -32,
+        -48
+      ],
+      "id": "a009232f-849e-4c2e-bba3-c04aae407695",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "18JUMl_eJwgHBBkrHKUwSEfev7TSHsH62-uVi6VNQl8g",
+          "mode": "list",
+          "cachedResultName": "Job Searches",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18JUMl_eJwgHBBkrHKUwSEfev7TSHsH62-uVi6VNQl8g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18JUMl_eJwgHBBkrHKUwSEfev7TSHsH62-uVi6VNQl8g/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "request_id",
+              "displayName": "request_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "parameters",
+              "displayName": "parameters",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        176,
+        -48
+      ],
+      "id": "716a43ab-ed48-4b81-b629-21d0fb8ca0c7",
+      "name": "Append or update row in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "j9ucC4MDebHfOq2M",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "61a0ae31-2427-4b68-8f5e-aca36df8ce3c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5eabd7565761e60e71e2ea930a98585ff93e36cb08859efc290abdcfb3ed6a9c"
+  },
+  "id": "6Yaijx3DT4hOThr9",
+  "tags": []
+}
