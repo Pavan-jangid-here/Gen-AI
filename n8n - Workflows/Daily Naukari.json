@@ -14,21 +14,6 @@
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "{\n  \"Job_Name\": \"Data Scientist\",\n  \"Location\": \"Ahmedabad\"\n}\n",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -240,
-        -48
-      ],
-      "id": "aaf8ddc5-f410-4191-92af-191e1ef8450f",
-      "name": "Edit Fields"
-    },
-    {
-      "parameters": {
         "url": "https://api.openwebninja.com/jsearch/search",
         "sendQuery": true,
         "queryParameters": {
@@ -36,14 +21,6 @@
             {
               "name": "query",
               "value": "={{ $json.Job_Name }} in {{ $json.Location }}"
-            },
-            {
-              "name": "page",
-              "value": "1"
-            },
-            {
-              "name": "num_pages",
-              "value": "1"
             },
             {
               "name": "country",
@@ -76,6 +53,14 @@
             {
               "name": "exclude_job_publishers",
               "value": "Indeed"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "num_pages",
+              "value": "3"
             }
           ]
         },
@@ -90,14 +75,19 @@
         },
         "options": {
           "response": {
-            "response": {}
-          }
+            "response": {
+              "fullResponse": false,
+              "neverError": false,
+              "responseFormat": "autodetect"
+            }
+          },
+          "pagination": {}
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -32,
+        0,
         -48
       ],
       "id": "a009232f-849e-4c2e-bba3-c04aae407695",
@@ -126,8 +116,8 @@
           "matchingColumns": [],
           "schema": [
             {
-              "id": "status",
-              "displayName": "status",
+              "id": "Job Title",
+              "displayName": "Job Title",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -136,8 +126,8 @@
               "removed": false
             },
             {
-              "id": "request_id",
-              "displayName": "request_id",
+              "id": "Company Name",
+              "displayName": "Company Name",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -146,8 +136,8 @@
               "removed": false
             },
             {
-              "id": "parameters",
-              "displayName": "parameters",
+              "id": "Company Website",
+              "displayName": "Company Website",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -156,8 +146,48 @@
               "removed": false
             },
             {
-              "id": "data",
-              "displayName": "data",
+              "id": "Employment Type",
+              "displayName": "Employment Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Apply Link",
+              "displayName": "Job Apply Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Description",
+              "displayName": "Job Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Posted DateTime",
+              "displayName": "Job Posted DateTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job Location",
+              "displayName": "Job Location",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -174,7 +204,7 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        176,
+        832,
         -48
       ],
       "id": "716a43ab-ed48-4b81-b629-21d0fb8ca0c7",
@@ -186,6 +216,129 @@
           "name": "Google Sheets account"
         }
       }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "471f5c57-2257-41ab-9d49-cbfddff982c9",
+              "name": "Job Title",
+              "value": "={{ $json.job_title }}",
+              "type": "string"
+            },
+            {
+              "id": "9aad39ed-7bc4-47e7-b1cd-8c980de6bb7c",
+              "name": "Company Name",
+              "value": "={{ $json.employer_name }}",
+              "type": "string"
+            },
+            {
+              "id": "d56198ac-5ae7-471e-981d-88c32afea106",
+              "name": "Company Website",
+              "value": "={{ $json.employer_website }}",
+              "type": "string"
+            },
+            {
+              "id": "d962e5f2-5367-4e04-af0c-e0d2a27fd587",
+              "name": "Employment Type",
+              "value": "={{ $json.job_employment_type }}",
+              "type": "string"
+            },
+            {
+              "id": "de6bc394-8f49-4194-8763-7e268ab62a65",
+              "name": "Job Apply Link",
+              "value": "={{ $json.job_apply_link }}",
+              "type": "string"
+            },
+            {
+              "id": "bc549977-ba96-4d24-9969-53d15d2074d9",
+              "name": "Job Description",
+              "value": "={{ $json.job_description }}",
+              "type": "string"
+            },
+            {
+              "id": "e3037298-34f2-42a8-8c21-c05c90d1b3c8",
+              "name": "Job Posted DateTime",
+              "value": "={{ $json.job_posted_at_datetime_utc }}",
+              "type": "string"
+            },
+            {
+              "id": "e261fbba-2048-416a-aa14-466d36ee7314",
+              "name": "Job Location",
+              "value": "={{ $json.job_location }}",
+              "type": "string"
+            },
+            {
+              "id": "7bc776c5-634c-4c97-abcc-3fa3fae0fd3e",
+              "name": "Google Link",
+              "value": "={{ $json.job_google_link }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        -48
+      ],
+      "id": "cd76cd48-51f9-4638-b1d8-dd043242a97b",
+      "name": "Choose the required Fields"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        416,
+        -48
+      ],
+      "id": "7e92e7ef-e216-48fa-bdc8-460ceef1b3ab",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "964ff066-5ed0-4e66-b03f-183307027731",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        -48
+      ],
+      "id": "9df4f397-e8c2-4320-b2f1-2e23535e238c",
+      "name": "Split the Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"Job_Name\": \"Data Scientist\",\n  \"Location\": \"Ahmedabad\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        -48
+      ],
+      "id": "aaf8ddc5-f410-4191-92af-191e1ef8450f",
+      "name": "Search Params"
     }
   ],
   "pinData": {},
@@ -194,18 +347,7 @@
       "main": [
         [
           {
-            "node": "Edit Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request",
+            "node": "Search Params",
             "type": "main",
             "index": 0
           }
@@ -216,7 +358,51 @@
       "main": [
         [
           {
+            "node": "Split the Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choose the required Fields": {
+      "main": [
+        [
+          {
             "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Choose the required Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split the Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Params": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
             "type": "main",
             "index": 0
           }
